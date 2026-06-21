@@ -4,8 +4,14 @@ target("quantum_analyzer")
     set_basename("quantum_analyzer")
     set_strip("none")
 
-    -- Статическое ядро подключается как зависимость Xmake.
-    add_deps("lib")
+    -- Linux/MinGW need whole-archive linking below so embedded LuaJIT can
+    -- resolve C API symbols through ffi.C. Keep lib as a build dependency
+    -- there, but do not let Xmake link the static archive a second time.
+    if is_plat("linux") or is_plat("mingw") then
+        add_deps("lib", {links = false})
+    else
+        add_deps("lib")
+    end
     add_linkdirs("$(projectdir)/build/lib")
 
     if is_plat("windows") and has_config("use_vcpkg") then
@@ -103,6 +109,21 @@ target("quantum_analyzer")
             end
             io.writefile(def_file, table.concat(def_content, "\n"))
             target:add("files", def_file)
+            if is_plat("mingw") then
+                for _, func in ipairs(api_exports) do
+                    target:add("ldflags", "-Wl,-u," .. func)
+                end
+                target:add("ldflags",
+                    "-Wl,--export-all-symbols",
+                    "-Wl,--whole-archive",
+                    "build/lib/libquantum_analyzer_core.a",
+                    "-Wl,--no-whole-archive",
+                    "-lopenblas",
+                    "-llapack",
+                    "-lluajit-5.1",
+                    {force = true}
+                )
+            end
         elseif is_plat("linux") then
             for _, func in ipairs(api_exports) do
                 target:add("ldflags", "-Wl,-u," .. func)
