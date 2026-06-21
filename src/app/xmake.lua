@@ -103,6 +103,12 @@ target("quantum_analyzer")
             end
             io.writefile(def_file, table.concat(def_content, "\n"))
             target:add("files", def_file)
+            if is_plat("mingw") then
+                for _, func in ipairs(api_exports) do
+                    target:add("ldflags", "-Wl,-u," .. func)
+                end
+                target:add("ldflags", "-Wl,--export-all-symbols")
+            end
         elseif is_plat("linux") then
             for _, func in ipairs(api_exports) do
                 target:add("ldflags", "-Wl,-u," .. func)
