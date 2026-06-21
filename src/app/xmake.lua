@@ -11,6 +11,8 @@ target("quantum_analyzer")
     if is_plat("windows") and has_config("use_vcpkg") then
         add_packages("openblas", "lapack", "eigen3", "boost_dynamic_bitset", "luajit")
         add_vcpkg_luajit_includedirs()
+    elseif is_plat("mingw") then
+        add_mingw_deps()
     else
         add_packages("luajit", "openblas")
         add_header_only_deps()
@@ -25,6 +27,10 @@ target("quantum_analyzer")
         set_runtimes("MT")
         add_cxflags("/O2", "/fp:precise", "/EHsc", "/W3")
         add_defines("_CRT_SECURE_NO_WARNINGS")
+        add_defines("GAUSSIAN_API=__declspec(dllexport)")
+        add_defines("QUANTUM_ANALYZER_EMBEDDED")
+    elseif is_plat("mingw") then
+        add_cxflags("-O3", "-fPIC", "-Wall")
         add_defines("GAUSSIAN_API=__declspec(dllexport)")
         add_defines("QUANTUM_ANALYZER_EMBEDDED")
     else
@@ -89,7 +95,7 @@ target("quantum_analyzer")
         table.sort(api_exports)
 
         -- Экспорт C API для LuaJIT FFI: .def на Windows, динамическая таблица символов на Linux.
-        if is_plat("windows") then
+        if is_plat("windows") or is_plat("mingw") then
             local def_file = path.join(build_dir, "logic.def")
             local def_content = {"EXPORTS"}
             for _, func in ipairs(api_exports) do

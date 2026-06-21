@@ -8,6 +8,8 @@ function configure_library(target_name, kind)
     add_files("core/*.cpp")
     if is_plat("windows") and has_config("use_vcpkg") then
         add_packages("openblas", "lapack", "eigen3", "boost_dynamic_bitset", "luajit")
+    elseif is_plat("mingw") then
+        add_mingw_deps()
     else
         add_packages("luajit", "openblas")
         add_header_only_deps()
@@ -21,6 +23,8 @@ function configure_library(target_name, kind)
         set_runtimes("MT")
         add_cxflags("/O2", "/fp:precise", "/EHsc", "/W3")
         add_defines("_CRT_SECURE_NO_WARNINGS")
+    elseif is_plat("mingw") then
+        add_cxflags("-O3", "-fPIC", "-fvisibility=default")
     else
         add_cxflags("-O3", "-fPIC", "-fvisibility=default")
         if has_config("native") then

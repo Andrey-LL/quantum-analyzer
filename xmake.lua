@@ -36,6 +36,8 @@ if is_plat("windows") and has_config("use_vcpkg") then
     add_requires("vcpkg::eigen3", {alias = "eigen3", system = true})
     add_requires("vcpkg::boost-dynamic-bitset", {alias = "boost_dynamic_bitset", system = true})
     add_requires("vcpkg::luajit", {alias = "luajit", system = true})
+elseif is_plat("mingw") then
+    -- MSYS2/UCRT64 packages are wired directly in add_mingw_deps().
 else
     add_requires("openblas", {system = true})
     add_requires("luajit", {system = true})
@@ -87,6 +89,19 @@ function add_vcpkg_luajit_includedirs()
     end
 end
 
+function add_mingw_deps()
+    local prefix = os.getenv("MINGW_PREFIX") or "/ucrt64"
+    add_includedirs(
+        path.join(prefix, "include"),
+        path.join(prefix, "include", "eigen3"),
+        path.join(prefix, "include", "luajit-2.1"),
+        path.join(prefix, "include", "luajit")
+    )
+    add_linkdirs(path.join(prefix, "lib"))
+    add_links("openblas", "lapack", "luajit-5.1")
+    add_defines("BOOST_ALL_NO_LIB")
+end
+
 includes("src/lib")
 includes("src/app")
 
@@ -95,7 +110,8 @@ function qa_project_root()
 end
 
 function qa_analyzer_exe()
-    return path.join(qa_project_root(), "bin", is_plat("windows") and "quantum_analyzer.exe" or "quantum_analyzer")
+    local is_windows_target = is_plat("windows") or is_plat("mingw")
+    return path.join(qa_project_root(), "bin", is_windows_target and "quantum_analyzer.exe" or "quantum_analyzer")
 end
 
 function qa_pandoc_filter_path()
@@ -241,7 +257,8 @@ target("pandoc_integration")
     set_kind("phony")
     on_run(function ()
         local root = os.projectdir()
-        local exe = path.join(root, "bin", is_plat("windows") and "quantum_analyzer.exe" or "quantum_analyzer")
+        local is_windows_target = is_plat("windows") or is_plat("mingw")
+        local exe = path.join(root, "bin", is_windows_target and "quantum_analyzer.exe" or "quantum_analyzer")
         local out = os.host() == "windows"
             and path.join(os.getenv("APPDATA"), "pandoc", "filters", "gaussian_filter.lua")
             or path.join(os.getenv("HOME"), ".local", "share", "pandoc", "filters", "gaussian_filter.lua")
@@ -397,7 +414,7 @@ target("package-release")
         local root = os.projectdir()
         local version = "1.0"
         local platform
-        if is_plat("windows") then
+        if is_plat("windows") or is_plat("mingw") then
             platform = "windows-x86_64"
         elseif is_plat("linux") then
             platform = "linux-x86_64"
@@ -408,7 +425,8 @@ target("package-release")
         local package_name = "quantum-analyzer-" .. version .. "-" .. platform
         local dist_dir = path.join(root, "dist")
         local stage = path.join(dist_dir, package_name)
-        local exe = path.join(root, "bin", is_plat("windows") and "quantum_analyzer.exe" or "quantum_analyzer")
+        local is_windows_target = is_plat("windows") or is_plat("mingw")
+        local exe = path.join(root, "bin", is_windows_target and "quantum_analyzer.exe" or "quantum_analyzer")
 
         os.mkdir(dist_dir)
         os.rm(stage)
@@ -426,7 +444,7 @@ target("package-release")
         os.cp(path.join(root, "examples", "fixtures"), examples_dst)
 
         local archive
-        if is_plat("windows") then
+        if is_plat("windows") or is_plat("mingw") then
             archive = path.join(dist_dir, package_name .. ".zip")
             os.rm(archive)
             local function ps_quote(s)
