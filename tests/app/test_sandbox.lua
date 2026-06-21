@@ -195,8 +195,7 @@ t.run_suite("sandbox", {
     {"plugin figures disable grouped mode", function()
         if t.mode ~= "app" then return end
 
-        local out = t.project_root .. "/.cache/test_outputs/sandbox/no_group_bar.svg"
-        os.remove(out)
+        local out_dir = t.project_root .. "/.cache/test_outputs/sandbox"
 
         local run = sandbox.run({
             [[
@@ -207,20 +206,21 @@ t.run_suite("sandbox", {
                     header = "flat",
                 })
 
+                local figure_name = "no_group_bar_" .. basis_name:gsub("[^%w_%-]+", "_") .. ".svg"
                 bar({
                     {label = basis_name, value = basis_size},
                     {label = "zero", value = 0},
                 }, {
                     caption = "Basis size",
-                    output = "]] .. out .. [[",
-                    link = "no_group_bar.svg",
+                    output = "]] .. out_dir .. [[/" .. figure_name,
+                    link = figure_name,
                 })
             ]],
         }, {t.fixture, t.project_root .. "/examples/fixtures/methane_sto-3g.log"}, {mode = "auto"})
 
         t.assert_eq(run.mode, "single", "figure output disables grouping")
         t.assert_eq(#run.outputs, 2, "one output per input file")
-        t.assert_true(run.outputs[1]:find("![Basis size](no_group_bar.svg)", 1, true) ~= nil, "figure markdown")
+        t.assert_true(run.outputs[1]:find("![Basis size](no_group_bar_", 1, true) ~= nil, "figure markdown")
     end},
 
     {"broken file does not abort batch", function()
