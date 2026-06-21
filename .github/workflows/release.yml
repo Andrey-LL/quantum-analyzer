@@ -82,6 +82,7 @@ jobs:
             boost:p
             luajit:p
             gnuplot:p
+            xmake:p
 
       - name: Build
         shell: msys2 {0}
