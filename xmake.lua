@@ -435,6 +435,23 @@ target("package-release")
         os.cp(path.join(root, "README.md"), stage)
         os.cp(path.join(root, "LICENSE"), stage)
         os.cp(exe, stage)
+        if is_plat("mingw") then
+            local ldd_output = os.iorunv("ldd", {exe}) or ""
+            local copied = {}
+            for line in ldd_output:gmatch("[^\r\n]+") do
+                local dll = line:match("=>%s+([^%s]+%.dll)")
+                    or line:match("^%s*([^%s]+%.dll)")
+                if dll
+                    and os.isfile(dll)
+                    and not dll:match("[/\\]Windows[/\\]")
+                    and not dll:match("libquantum_analyzer_core%.dll$")
+                    and not copied[dll]
+                then
+                    os.cp(dll, stage)
+                    copied[dll] = true
+                end
+            end
+        end
         os.cp(path.join(root, "bin", "plugins"), stage)
         os.cp(path.join(root, "bin", "templates"), stage)
 

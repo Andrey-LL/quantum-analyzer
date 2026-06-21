@@ -4,8 +4,13 @@ target("quantum_analyzer")
     set_basename("quantum_analyzer")
     set_strip("none")
 
-    -- Статическое ядро подключается как зависимость Xmake.
-    add_deps("lib")
+    if is_plat("mingw") then
+        add_files("../lib/core/*.cpp")
+        add_defines("QUANTUM_ANALYZER_API_EXPORT")
+    else
+        -- Статическое ядро подключается как зависимость Xmake.
+        add_deps("lib")
+    end
     add_linkdirs("$(projectdir)/build/lib")
 
     if is_plat("windows") and has_config("use_vcpkg") then
@@ -21,7 +26,7 @@ target("quantum_analyzer")
 
     add_files("loader.c")
 
-    -- add_deps обеспечивает линковку с target("lib").
+    -- add_deps обеспечивает линковку с target("lib") вне MinGW.
 
     if is_plat("windows") then
         set_runtimes("MT")
