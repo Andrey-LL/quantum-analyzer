@@ -282,6 +282,16 @@ target("examples")
         local exe = path.join(root, "bin", (is_plat("windows") or is_plat("mingw")) and "quantum_analyzer.exe" or "quantum_analyzer")
         local generated = path.join(root, "examples", "generated")
         local reports_dir = path.join(generated, "analysis_reports")
+        local envs = {PROJECT_ROOT = root, QA_TEST_MODE = "app"}
+        if is_plat("windows") or is_plat("mingw") then
+            local paths = {path.join(root, "bin"), path.join(root, "build", "lib")}
+            local prefix = os.getenv("MINGW_PREFIX")
+            if prefix then
+                paths[#paths + 1] = path.join(prefix, "bin")
+            end
+            paths[#paths + 1] = os.getenv("PATH") or ""
+            envs.PATH = table.concat(paths, os.host() == "windows" and ";" or ":")
+        end
         os.mkdir(generated)
         os.rm(reports_dir)
         os.mkdir(reports_dir)
@@ -294,7 +304,7 @@ target("examples")
             "examples/fixtures/methane_6-31g.log",
             "examples/fixtures/methane_sto-3g.log",
             "examples/fixtures/water_sto-3g.log",
-        })
+        }, {envs = envs})
         local reports = os.files(path.join(reports_dir, "*.md"))
         table.sort(reports)
         assert(#reports == 2, "analysis_demo must generate exactly two grouped report files")
@@ -344,6 +354,15 @@ target("test-app")
         local root = os.projectdir()
         local exe = path.join(root, "bin", (is_plat("windows") or is_plat("mingw")) and "quantum_analyzer.exe" or "quantum_analyzer")
         local envs = {PROJECT_ROOT = root, QA_TEST_MODE = "app"}
+        if is_plat("windows") or is_plat("mingw") then
+            local paths = {path.join(root, "bin"), path.join(root, "build", "lib")}
+            local prefix = os.getenv("MINGW_PREFIX")
+            if prefix then
+                paths[#paths + 1] = path.join(prefix, "bin")
+            end
+            paths[#paths + 1] = os.getenv("PATH") or ""
+            envs.PATH = table.concat(paths, os.host() == "windows" and ";" or ":")
+        end
         for _, f in ipairs(os.files(path.join(root, "tests", "lib", "test_*.lua"))) do
             os.execv(exe, {f}, {envs = envs})
         end
@@ -435,6 +454,12 @@ target("package-release")
         os.cp(path.join(root, "README.md"), stage)
         os.cp(path.join(root, "LICENSE"), stage)
         os.cp(exe, stage)
+        if is_windows_target then
+            local core_dll = path.join(root, "bin", "libquantum_analyzer_core.dll")
+            if os.isfile(core_dll) then
+                os.cp(core_dll, stage)
+            end
+        end
         os.cp(path.join(root, "bin", "plugins"), stage)
         os.cp(path.join(root, "bin", "templates"), stage)
 

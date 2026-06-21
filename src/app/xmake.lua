@@ -129,6 +129,12 @@ target("quantum_analyzer")
     -- Ресурсы времени выполнения копируются рядом со встроенным бинарником.
     after_build(function (target)
         local targetdir = target:targetdir()
+        if is_plat("windows") or is_plat("mingw") then
+            local core_dll = path.join(os.projectdir(), "build", "lib", "libquantum_analyzer_core.dll")
+            if os.isfile(core_dll) then
+                os.cp(core_dll, targetdir)
+            end
+        end
         local plugins_src = path.join(os.projectdir(), "src", "app", "share")
         local plugins_dst = path.join(targetdir, "plugins")
         local templates_src = path.join(os.projectdir(), "src", "app", "templates")
