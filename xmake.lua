@@ -279,7 +279,7 @@ target("examples")
 
     on_run(function ()
         local root = os.projectdir()
-        local exe = path.join(root, "bin", is_plat("windows") and "quantum_analyzer.exe" or "quantum_analyzer")
+        local exe = path.join(root, "bin", (is_plat("windows") or is_plat("mingw")) and "quantum_analyzer.exe" or "quantum_analyzer")
         local generated = path.join(root, "examples", "generated")
         local reports_dir = path.join(generated, "analysis_reports")
         os.mkdir(generated)
@@ -342,7 +342,7 @@ target("test-app")
 
     on_run(function ()
         local root = os.projectdir()
-        local exe = path.join(root, "bin", is_plat("windows") and "quantum_analyzer.exe" or "quantum_analyzer")
+        local exe = path.join(root, "bin", (is_plat("windows") or is_plat("mingw")) and "quantum_analyzer.exe" or "quantum_analyzer")
         local envs = {PROJECT_ROOT = root, QA_TEST_MODE = "app"}
         for _, f in ipairs(os.files(path.join(root, "tests", "lib", "test_*.lua"))) do
             os.execv(exe, {f}, {envs = envs})
@@ -371,7 +371,7 @@ target("test-pandoc")
 
     on_run(function ()
         local root = os.projectdir()
-        local exe = path.join(root, "bin", is_plat("windows") and "quantum_analyzer.exe" or "quantum_analyzer")
+        local exe = path.join(root, "bin", (is_plat("windows") or is_plat("mingw")) and "quantum_analyzer.exe" or "quantum_analyzer")
         local filter = os.host() == "windows"
             and path.join(os.getenv("APPDATA"), "pandoc", "filters", "gaussian_filter.lua")
             or path.join(os.getenv("HOME"), ".local", "share", "pandoc", "filters", "gaussian_filter.lua")
