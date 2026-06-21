@@ -1,0 +1,64 @@
+# Xmake
+.xmake/
+build/
+bin/
+/lib/
+
+# Compiled objects and libraries
+*.o
+*.obj
+*.a
+*.so
+*.dll
+*.dylib
+*.exe
+
+# Generated C files from embedded LuaJIT bytecode
+build/*.c
+build/*_patched.lua
+
+# Editor and IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.kate-swp
+*~
+*.orig
+*.bak
+*.tmp
+
+# Local AI/tooling settings
+.qwen/
+.cache/
+
+# Logs and temporary runtime output
+*.tmp
+*.temp
+*.trace
+*.stackdump
+/core
+core.*
+
+# Generated documentation bundles
+docs/cpp_bundle.md
+docs/lua_bundle.md
+docs/signatures.txt
+docs/diploma/generated/
+
+# Archives and local drafts
+dist/
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+
+# Python/cache files sometimes produced by tooling
+__pycache__/
+*.py[cod]
+
+# OS files
+.DS_Store
+Thumbs.db

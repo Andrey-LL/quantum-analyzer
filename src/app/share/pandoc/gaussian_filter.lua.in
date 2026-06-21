@@ -1,0 +1,161 @@
+local system = require("pandoc.system")
+local path   = require("pandoc.path")
+
+local PROJECT_ROOT = [[@PROJECT_ROOT@]]
+local QUANTUM_ANALYZER_EXE = [[@QUANTUM_ANALYZER_EXE@]]
+
+-- Проверка существования директории без зависимости от lfs.
+local function dir_exists(path_str)
+    -- Сначала пробуем открыть путь как файл.
+    local f = io.open(path_str, "r")
+    if f then
+        f:close()
+        return true
+    end
+    
+    -- На Windows используем dir.
+    if os.getenv("OS") == "Windows_NT" then
+        local handle = io.popen('dir "' .. path_str .. '" 2>nul')
+        if handle then
+            handle:close()
+            return true
+        end
+    else
+        -- На Unix используем test -d.
+        local handle = io.popen('[ -d "' .. path_str .. '" ] && echo 1')
+        if handle then
+            local result = handle:read("*line")
+            handle:close()
+            return result == "1"
+        end
+    end
+    
+    return false
+end
+
+-- Создание директории без зависимости от lfs.
+local function mkdir(path_str)
+    if os.getenv("OS") == "Windows_NT" then
+        os.execute('mkdir "' .. path_str .. '" 2>nul')
+    else
+        os.execute('mkdir -p "' .. path_str .. '" 2>/dev/null')
+    end
+end
+
+-- Получение короткого пути 8.3 для Windows.
+local function get_short_path(longpath)
+    if os.getenv("OS") ~= "Windows_NT" then
+        return longpath
+    end
+    local handle = io.popen('for %I in ("' .. longpath .. '") do @echo %~sI')
+    if handle then
+        local short = handle:read("*line")
+        handle:close()
+        if short and short ~= "" then
+            return short
+        end
+    end
+    return longpath
+end
+
+local function lua_long_string(value)
+    local eq = ""
+    while value:find("]" .. eq .. "]", 1, true) do
+        eq = eq .. "="
+    end
+    return "[" .. eq .. "[" .. value .. "]" .. eq .. "]"
+end
+
+-- Создание временного Lua-файла, который выполняется через собранный бинарник.
+local function create_temp_file(code)
+    local temp_dir = os.getenv("TEMP") or os.getenv("TMP") or "/tmp"
+    local filename = path.join({temp_dir, "qa_" .. os.time() .. "_" .. math.random(1000, 9999) .. ".lua"})
+    local content = table.concat({
+        [[local sandbox = require("sandbox")]],
+        "local outputs = sandbox.execute({" .. lua_long_string(code) .. "}, nil)",
+        [[for _, out in ipairs(outputs or {}) do]],
+        [[    io.write(out)]],
+        [[    if out:sub(-1) ~= "\n" then io.write("\n") end]],
+        [[end]],
+    }, "\n")
+    
+    local f = io.open(filename, "wb")
+    if not f then
+        error("Cannot create temporary file: " .. filename)
+    end
+    f:write(content)
+    f:close()
+    
+    return filename
+end
+
+-- Удаление временного файла.
+local function remove_temp_file(filename)
+    if filename and filename ~= "" then
+        os.remove(filename)
+    end
+end
+
+local function run_block(code)
+    local temp_file = nil
+    
+    local function cleanup()
+        if temp_file then
+            remove_temp_file(temp_file)
+        end
+    end
+    
+    temp_file = create_temp_file(code)
+    
+    -- Проверяем, что временный файл действительно создан.
+    local f = io.open(temp_file, "r")
+    if not f then
+        cleanup()
+        error("Temporary file not created: " .. temp_file)
+    end
+    f:close()
+    
+    -- Короткие пути нужны для совместимости с Windows.
+    local short_analyzer = get_short_path(QUANTUM_ANALYZER_EXE)
+    local short_temp = get_short_path(temp_file)
+    
+    local output = pandoc.pipe(short_analyzer, {short_temp}, "")
+
+    cleanup()
+
+    return output
+end
+
+local function strip_no_file_header(markdown)
+    if markdown:sub(1, 11) ~= "# (no file)" then
+        return markdown
+    end
+    local marker = "**Размер базиса:** 0"
+    local pos = markdown:find(marker, 1, true)
+    if not pos then
+        return markdown
+    end
+    local after = markdown:find("\n\n", pos + #marker, true)
+    if not after then
+        return markdown
+    end
+    return markdown:sub(after + 2)
+end
+
+function CodeBlock(el)
+    if el.classes:includes("qa") then
+        local ok, out_md = pcall(run_block, el.text)
+
+        if not ok then
+            return pandoc.CodeBlock("Quantum Analyzer Error:\n" .. tostring(out_md), {"error"})
+        end
+
+        out_md = strip_no_file_header(out_md)
+        if not out_md or out_md == "" then
+            return {}
+        end
+
+        local result = pandoc.read(out_md, "markdown").blocks
+        return result
+    end
+end
