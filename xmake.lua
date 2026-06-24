@@ -458,11 +458,8 @@ target("package-release")
         os.cp(path.join(root, "LICENSE"), stage)
         os.cp(exe, stage)
         if is_plat("mingw") then
-            local ldd_output = os.iorunv("ldd", {exe}) or ""
             local copied = {}
-            for line in ldd_output:gmatch("[^\r\n]+") do
-                local dll = line:match("=>%s+([^%s]+%.dll)")
-                    or line:match("^%s*([^%s]+%.dll)")
+            local function copy_runtime_dll(dll)
                 if dll
                     and os.isfile(dll)
                     and not dll:match("[/\\]Windows[/\\]")
@@ -471,6 +468,32 @@ target("package-release")
                 then
                     os.cp(dll, stage)
                     copied[dll] = true
+                end
+            end
+
+            local ldd_output = os.iorunv("ldd", {exe}) or ""
+            for line in ldd_output:gmatch("[^\r\n]+") do
+                copy_runtime_dll(line:match("=>%s+([^%s]+%.dll)") or line:match("^%s*([^%s]+%.dll)"))
+            end
+
+            local prefix = os.getenv("MINGW_PREFIX") or "/ucrt64"
+            local bin_dir = path.join(prefix, "bin")
+            local patterns = {
+                "libgcc_s_*.dll",
+                "libstdc++-6.dll",
+                "libwinpthread-1.dll",
+                "libgfortran-*.dll",
+                "libquadmath-*.dll",
+                "libgomp-1.dll",
+                "libopenblas*.dll",
+                "libblas*.dll",
+                "liblapack*.dll",
+                "libluajit-*.dll",
+                "lua51.dll",
+            }
+            for _, pattern in ipairs(patterns) do
+                for _, dll in ipairs(os.files(path.join(bin_dir, pattern))) do
+                    copy_runtime_dll(dll)
                 end
             end
         end
