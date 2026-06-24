@@ -36,8 +36,6 @@ jobs:
             luajit \
             libluajit-5.1-dev \
             luarocks \
-            gnuplot \
-            pandoc \
             universal-ctags
 
       - name: Build
@@ -46,7 +44,7 @@ jobs:
           xmake
 
       - name: Test
-        run: xmake run test-all
+        run: xmake run test-release-app
 
       - name: Package
         run: xmake run package-release
@@ -81,7 +79,6 @@ jobs:
             eigen3:p
             boost:p
             luajit:p
-            gnuplot:p
             xmake:p
 
       - name: Build
@@ -92,7 +89,7 @@ jobs:
 
       - name: Test app
         shell: msys2 {0}
-        run: xmake run test-app
+        run: xmake run test-release-app
 
       - name: Package
         shell: msys2 {0}

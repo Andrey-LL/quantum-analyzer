@@ -352,6 +352,20 @@ target("test-app")
         os.execv(exe, {path.join(root, "tests", "app", "test_router.lua")}, {envs = envs})
     end)
 
+target("test-release-app")
+    set_kind("phony")
+    add_deps("quantum_analyzer")
+
+    on_run(function ()
+        local root = os.projectdir()
+        local exe = path.join(root, "bin", (is_plat("windows") or is_plat("mingw")) and "quantum_analyzer.exe" or "quantum_analyzer")
+        local envs = {PROJECT_ROOT = root, QA_TEST_MODE = "app"}
+        for _, f in ipairs(os.files(path.join(root, "tests", "lib", "test_*.lua"))) do
+            os.execv(exe, {f}, {envs = envs})
+        end
+        os.execv(exe, {path.join(root, "tests", "app", "test_router.lua")}, {envs = envs})
+    end)
+
 target("test-luarocks")
     set_kind("phony")
     add_deps("lib_shared")
