@@ -195,7 +195,7 @@ t.run_suite("sandbox", {
     {"plugin figures disable grouped mode", function()
         if t.mode ~= "app" then return end
 
-        local out_dir = t.project_root .. "/.cache/test_outputs/sandbox"
+        local out_dir = (t.project_root .. "/.cache/test_outputs/sandbox"):gsub("\\", "/")
 
         local run = sandbox.run({
             [[

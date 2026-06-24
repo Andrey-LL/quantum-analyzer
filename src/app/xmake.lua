@@ -4,7 +4,7 @@ target("quantum_analyzer")
     set_basename("quantum_analyzer")
     set_strip("none")
 
-    if is_plat("mingw") then
+    if is_plat("linux") or is_plat("mingw") then
         add_files("../lib/core/*.cpp")
         add_defines("QUANTUM_ANALYZER_API_EXPORT")
     else
@@ -122,10 +122,6 @@ target("quantum_analyzer")
             target:add("ldflags",
                 "-static-libgcc",
                 "-static-libstdc++",
-                "-Wl,--whole-archive",
-                "build/lib/libquantum_analyzer_core.a",
-                "-Wl,--no-whole-archive",
-                "-lopenblas",
                 {force = true}
             )
         end
