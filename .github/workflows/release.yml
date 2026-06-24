@@ -89,7 +89,10 @@ jobs:
 
       - name: Test app
         shell: msys2 {0}
-        run: xmake run test-release-app
+        run: |
+          ./bin/quantum_analyzer.exe --help
+          ./bin/quantum_analyzer.exe -e "print('qa-app-ok')"
+          ./bin/quantum_analyzer.exe --batch --template summary_analysis --files examples/fixtures/methane_6-31g.log examples/fixtures/methane_sto-3g.log examples/fixtures/water_sto-3g.log
 
       - name: Package
         shell: msys2 {0}
