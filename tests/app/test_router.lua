@@ -1,5 +1,7 @@
 local t = dofile((os.getenv("PROJECT_ROOT") or ".") .. "/tests/support.lua")
 local is_windows = package.config:sub(1, 1) == "\\"
+    or (os.getenv("OS") or ""):lower():find("windows", 1, true) ~= nil
+    or os.getenv("MSYSTEM") ~= nil
 local app_bin = t.project_root .. (is_windows and "/bin/quantum_analyzer.exe" or "/bin/quantum_analyzer")
 
 local function shell_quote(s)
