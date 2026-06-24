@@ -343,7 +343,11 @@ target("test-app")
     on_run(function ()
         local root = os.projectdir()
         local exe = path.join(root, "bin", (is_plat("windows") or is_plat("mingw")) and "quantum_analyzer.exe" or "quantum_analyzer")
-        local envs = {PROJECT_ROOT = root, QA_TEST_MODE = "app"}
+        local envs = {
+            PROJECT_ROOT = root,
+            QA_TEST_MODE = "app",
+            QA_TEST_WINDOWS = (is_plat("windows") or is_plat("mingw")) and "1" or "0",
+        }
         for _, f in ipairs(os.files(path.join(root, "tests", "lib", "test_*.lua"))) do
             os.execv(exe, {f}, {envs = envs})
         end
@@ -359,7 +363,11 @@ target("test-release-app")
     on_run(function ()
         local root = os.projectdir()
         local exe = path.join(root, "bin", (is_plat("windows") or is_plat("mingw")) and "quantum_analyzer.exe" or "quantum_analyzer")
-        local envs = {PROJECT_ROOT = root, QA_TEST_MODE = "app"}
+        local envs = {
+            PROJECT_ROOT = root,
+            QA_TEST_MODE = "app",
+            QA_TEST_WINDOWS = (is_plat("windows") or is_plat("mingw")) and "1" or "0",
+        }
         for _, f in ipairs(os.files(path.join(root, "tests", "lib", "test_*.lua"))) do
             os.execv(exe, {f}, {envs = envs})
         end

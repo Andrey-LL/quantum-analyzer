@@ -1,5 +1,6 @@
 local t = dofile((os.getenv("PROJECT_ROOT") or ".") .. "/tests/support.lua")
-local is_windows = package.config:sub(1, 1) == "\\"
+local is_windows = os.getenv("QA_TEST_WINDOWS") == "1"
+    or package.config:sub(1, 1) == "\\"
     or (os.getenv("OS") or ""):lower():find("windows", 1, true) ~= nil
     or os.getenv("MSYSTEM") ~= nil
 local app_bin = t.project_root .. (is_windows and "/bin/quantum_analyzer.exe" or "/bin/quantum_analyzer")
@@ -34,19 +35,18 @@ t.run_suite("binary router", {
     end},
 
     {"-e executes code", function()
-        local cmd = shell_quote(app_bin) .. " -e " .. shell_quote([[print("qa-app-ok")]])
+        local cmd = shell_quote(app_bin) .. " -e " .. shell_quote([[print('qa-app-ok')]])
         local output, ok = capture(cmd)
         t.assert_true(ok, "command exits successfully")
         t.assert_true(output:find("qa%-app%-ok") ~= nil, "prints marker")
     end},
 
     {"embedded ffi can open fixture", function()
-        local code = [[
-            local chemistry = require("chemistry_ffi")
-            local mol = chemistry.Molecule.load("]] .. t.fixture .. [[")
-            print(mol:get_num_atoms())
-            mol:close()
-        ]]
+        local fixture = t.fixture:gsub("\\", "/")
+        local code = "local chemistry = require('chemistry_ffi')\n" ..
+            "local mol = chemistry.Molecule.load([[" .. fixture .. "]])\n" ..
+            "print(mol:get_num_atoms())\n" ..
+            "mol:close()"
         local cmd = shell_quote(app_bin) .. " -e " .. shell_quote(code)
         local output, ok = capture(cmd)
         t.assert_true(ok, "command exits successfully")
